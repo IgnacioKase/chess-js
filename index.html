@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>ChessGame</title>
+    <style>
+        #board {
+            width: 450px;
+            height: 450px;
+            border: none;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        #board tr {
+            height: 50px;
+            width: 50px;
+            margin: 0;
+            padding: 0;
+        }
+
+        #board td {
+            width: 50px;
+            height: 50px;
+            border: 1px solid black;
+            margin: 0;
+            padding: 0;
+            background-color: #bfb68f;
+        }
+
+        #board tr > :first-child, #board tr:first-child td{
+            border: none;
+            background-color: white;
+        }
+
+        #board tr:not(:first-child):nth-child(odd) td:nth-child(even), #board tr:nth-child(even) td:not(:first-child):nth-child(odd) {
+            background-color: rgb(52, 141, 67);
+        }
+    </style>
+</head>
+<body>
+    <h1>ChessGame</h1>
+    <table id="board"></table>
+    <input type="text" id="move"/>
+    <button id="submit">Submit</button>
+    <script src="./dist/bundle.js"></script>
+</body>
+</html>
