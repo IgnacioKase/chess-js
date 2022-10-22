@@ -1,94 +1,186 @@
-import { Piece, PieceType, Position, Color, ChessBoard, Move } from "./types";
+import { Move, Piece, Position, PositionKey } from "./piece";
+import { PieceType, Color } from "./types";
 
-function _getPieceStringRepresentation(piece: Piece): string {
-  return piece.color === Color.white ? piece.type : piece.type.toLowerCase();
+const HIGHLIGH_PIECE_CLASS = "highlight-piece";
+const HEADER_INDEX_NAMES = ["", "a", "b", "c", "d", "e", "f", "g", "h"];
+const BOARD_SIZE = { rows: 8, columns: 8 }; // it doesn't include indexes on the sides
+
+interface ChessBoard {
+  setPiece(piece: Piece): void;
+  getPiece(position: Position): Piece;
+  setOnMoveListener(listener: (move: Move) => void): void;
+  isEmpty(position: Position): boolean;
+  isEnemyPiece(position: Position, color: Color): boolean;
 }
 
-type _BoardMatrix = Piece[][];
-
 class HTMLChessBoard implements ChessBoard {
-  private _board: _BoardMatrix;
-  private _boardElement: HTMLTableElement;
-  private _inputElement: HTMLInputElement;
   private _onMoveListener: ((move: Move) => void) | null;
+  private _htmlBoard: HTMLTableElement;
+  private _currentSelectedPiece: Piece | null = null;
+  private _piecesByCellId = new Map<string, Piece>();
+  private _cellsByPositionKey = new Map<PositionKey, HTMLTableCellElement>();
 
-  constructor(
-    boardElement: HTMLTableElement,
-    inputElement: HTMLInputElement,
-    submitButton: HTMLButtonElement
-  ) {
-    this._board = this._createEmptyBoard();
-    this._boardElement = boardElement;
-    this._inputElement = inputElement;
+  constructor(boardElement: HTMLTableElement) {
+    this._htmlBoard = boardElement;
+    this._piecesByCellId = new Map();
     this._onMoveListener = null;
-    submitButton.addEventListener("click", this._getPlayerMove.bind(this));
-  }
-
-  printBoard(): void {
-    this._boardElement.innerHTML = "";
-    const row = this._boardElement.insertRow();
-    ["", "a", "b", "c", "d", "e", "f", "g", "h"].forEach((letter) => {
-      const cell = row.insertCell();
-      cell.innerHTML = letter;
-    });
-    for (let i = 0; i < 8; i++) {
-      const row = this._boardElement.insertRow();
-      const indexCell = row.insertCell();
-      indexCell.innerHTML = `${i + 1}`;
-      for (let j = 0; j < 8; j++) {
-        const cell = row.insertCell();
-        const piece = this._board[i][j];
-        cell.innerHTML = _getPieceStringRepresentation(piece);
-        cell.style.color = piece.color;
-      }
-    }
+    this._initializeHtmlBoard();
   }
 
   setPiece(piece: Piece): void {
-    this._board[piece.position.y][piece.position.x] = piece;
+    const cell = this._getCellByPosition(piece.position);
+    this._setPieceOnCell(cell, piece);
   }
 
   getPiece(position: Position): Piece {
-    return this._board[position.y][position.x];
+    if (!position.isValid())
+      throw new Error(`Invalid position ${position.asKey()}`);
+    const cell = this._getCellByPosition(position);
+    return this._getPieceFromCell(cell);
   }
 
   setOnMoveListener(listener: (move: Move) => void): void {
     this._onMoveListener = listener;
   }
 
-  _getPlayerMove(): void {
-    const userInput = this._inputElement.value;
-    const [from, to] = userInput.toLowerCase().split(" ");
-    if (!this._onMoveListener) {
-      return;
-    }
-    this._onMoveListener({
-      from: this._getPositionFromUserInput(from),
-      to: this._getPositionFromUserInput(to),
+  isEmpty(position: Position): boolean {
+    if (!position.isValid()) return false;
+    const piece = this.getPiece(position);
+    return piece.type === PieceType.empty;
+  }
+
+  isEnemyPiece(position: Position, color: Color): boolean {
+    if (!position.isValid()) return false;
+    const piece = this.getPiece(position);
+    if (piece.type === PieceType.empty) return false;
+    return piece.color !== color;
+  }
+
+  private _getCellByPosition(position: Position): HTMLTableCellElement {
+    const cell = this._cellsByPositionKey.get(position.asKey());
+    if (cell === undefined)
+      throw new Error(`Cell not found, on ${position.asKey()}`);
+    return cell;
+  }
+
+  private _initializeHtmlBoard(): void {
+    this._clearHtmlTable();
+    this._insertHeaderRow();
+    this._insertBoardRows();
+  }
+
+  private _clearHtmlTable(): void {
+    this._htmlBoard.innerHTML = "";
+  }
+
+  private _insertHeaderRow(): void {
+    const header_row = this._htmlBoard.insertRow();
+    HEADER_INDEX_NAMES.forEach((index) => {
+      const cell = header_row.insertCell();
+      cell.innerHTML = index;
     });
   }
 
-  private _createEmptyBoard(): _BoardMatrix {
-    const board: _BoardMatrix = [];
-    for (let i = 0; i < 8; i++) {
-      const row: Piece[] = [];
-      for (let j = 0; j < 8; j++) {
-        const piece: Piece = {
-          type: PieceType.empty,
-          color: Color.white,
-          position: { x: i, y: j },
-        };
-        row.push(piece);
-      }
-      board.push(row);
-    }
-    return board;
+  private _insertBoardRows(): void {
+    for (let i = 0; i < BOARD_SIZE.rows; i++) this._insertBoardRow();
   }
 
-  private _getPositionFromUserInput(userInput: string): Position {
-    // User input is in the format "a1", output is {x: 0, y: 0}
-    return { x: userInput.charCodeAt(0) - 97, y: parseInt(userInput[1]) - 1 };
+  private _insertBoardRow(): void {
+    const row = this._htmlBoard.insertRow();
+    this._insertIndexCell(row);
+    this._insertBoardCells(row);
+  }
+
+  private _insertIndexCell(row: HTMLTableRowElement): void {
+    const cell = row.insertCell();
+    cell.innerHTML = `${row.rowIndex}`;
+  }
+
+  private _insertBoardCells(row: HTMLTableRowElement): void {
+    for (let column = 0; column < BOARD_SIZE.columns; column++)
+      this._insertBoardCell(row);
+  }
+
+  private _insertBoardCell(row: HTMLTableRowElement): void {
+    const cell = row.insertCell();
+    const position = new Position(cell.cellIndex - 1, row.rowIndex - 1);
+    cell.setAttribute("id", `${position.x}${position.y}`);
+    this._cellsByPositionKey.set(position.asKey(), cell);
+    this._setEmptyPieceOnCell(cell, position);
+    cell.addEventListener("click", this._onPieceClick.bind(this));
+  }
+
+  private _setEmptyPieceOnCell(
+    cell: HTMLTableCellElement,
+    position: Position
+  ): void {
+    const piece = this._createEmptyPiece(position);
+    this._setPieceOnCell(cell, piece);
+  }
+
+  private _createEmptyPiece(position: Position): Piece {
+    return new Piece(PieceType.empty, Color.white, position);
+  }
+
+  private _setPieceOnCell(cell: HTMLTableCellElement, piece: Piece): void {
+    cell.innerHTML = piece.asString();
+    cell.style.color = piece.color;
+    this._savePieceOnCellMap(cell, piece);
+  }
+
+  private _onPieceClick(event: MouseEvent): void {
+    const cell = event.target as HTMLTableCellElement;
+    const piece = this._getPieceFromCell(cell);
+
+    this._resetHightlitedCells();
+
+    if (this._currentSelectedPiece !== null) return this._triggerMove(piece);
+    this._setActivePiece(piece, cell);
+  }
+
+  private _savePieceOnCellMap(cell: HTMLTableCellElement, piece: Piece): void {
+    const cell_id = cell.getAttribute("id") || "";
+    this._piecesByCellId.set(cell_id, piece);
+  }
+
+  private _getPieceFromCell(cell: HTMLTableCellElement): Piece {
+    const cell_id = cell.getAttribute("id") || "";
+    const piece = this._piecesByCellId.get(cell_id);
+    if (piece === undefined) throw new Error(`Piece not found, on ${cell_id}`);
+    return piece;
+  }
+
+  private _triggerMove(to: Piece): void {
+    if (this._currentSelectedPiece === null) return;
+    this._movePiece(this._currentSelectedPiece, to);
+    this._currentSelectedPiece = null;
+  }
+
+  private _setActivePiece(piece: Piece, cell: HTMLTableCellElement): void {
+    if (piece.type === PieceType.empty) return;
+    this._currentSelectedPiece = piece;
+    this._highLightCell(cell);
+  }
+
+  private _movePiece(from: Piece, to: Piece): void {
+    if (this._onMoveListener === null) return;
+    this._onMoveListener({ from: from, to: to });
+  }
+
+  private _resetHightlitedCells(): void {
+    const cells = Array.from(
+      document.getElementsByClassName(HIGHLIGH_PIECE_CLASS)
+    ) as Array<HTMLTableCellElement>;
+    this._clearHighlight(cells);
+  }
+
+  private _clearHighlight(cells: Array<HTMLTableCellElement>): void {
+    cells.forEach((c) => c.classList.remove(HIGHLIGH_PIECE_CLASS));
+  }
+
+  private _highLightCell(cell: HTMLTableCellElement): void {
+    cell.classList.add(HIGHLIGH_PIECE_CLASS);
   }
 }
 
-export { HTMLChessBoard };
+export { ChessBoard, HTMLChessBoard };
