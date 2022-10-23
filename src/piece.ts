@@ -1,6 +1,6 @@
 import { ChessBoard } from "./board";
 import { Color, PieceType } from "./types";
-import { getValidMoves } from "./valid_moves";
+import { getValidMoves } from "./moves_map";
 
 type PositionKey = string;
 

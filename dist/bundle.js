@@ -466,6 +466,47 @@ function getValidRookMoves(board, piece) {
 
 /***/ }),
 
+/***/ "./src/moves_map.ts":
+/*!**************************!*\
+  !*** ./src/moves_map.ts ***!
+  \**************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "getValidMoves": () => (/* binding */ getValidMoves)
+/* harmony export */ });
+/* harmony import */ var _moves_bishop__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./moves/bishop */ "./src/moves/bishop.ts");
+/* harmony import */ var _moves_king__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./moves/king */ "./src/moves/king.ts");
+/* harmony import */ var _moves_knight__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./moves/knight */ "./src/moves/knight.ts");
+/* harmony import */ var _moves_pawn__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./moves/pawn */ "./src/moves/pawn.ts");
+/* harmony import */ var _moves_queen__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./moves/queen */ "./src/moves/queen.ts");
+/* harmony import */ var _moves_rook__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./moves/rook */ "./src/moves/rook.ts");
+/* harmony import */ var _types__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./types */ "./src/types.ts");
+
+
+
+
+
+
+
+const _VALID_MOVES_BY_PIECE = new Map([
+    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.pawn, _moves_pawn__WEBPACK_IMPORTED_MODULE_3__.getValidPawnMoves],
+    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.rook, _moves_rook__WEBPACK_IMPORTED_MODULE_5__.getValidRookMoves],
+    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.knight, _moves_knight__WEBPACK_IMPORTED_MODULE_2__.getValidKnightMoves],
+    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.bishop, _moves_bishop__WEBPACK_IMPORTED_MODULE_0__.getValidBishopMoves],
+    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.queen, _moves_queen__WEBPACK_IMPORTED_MODULE_4__.getValidQueenMoves],
+    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.king, _moves_king__WEBPACK_IMPORTED_MODULE_1__.getValidKingMoves],
+]);
+function getValidMoves(board, piece) {
+    const validMovesGetter = _VALID_MOVES_BY_PIECE.get(piece.type);
+    return validMovesGetter ? validMovesGetter(board, piece) : [];
+}
+
+
+
+/***/ }),
+
 /***/ "./src/piece.ts":
 /*!**********************!*\
   !*** ./src/piece.ts ***!
@@ -478,7 +519,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "Position": () => (/* binding */ Position)
 /* harmony export */ });
 /* harmony import */ var _types__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./types */ "./src/types.ts");
-/* harmony import */ var _valid_moves__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./valid_moves */ "./src/valid_moves.ts");
+/* harmony import */ var _moves_map__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./moves_map */ "./src/moves_map.ts");
 
 
 class Position {
@@ -525,7 +566,7 @@ class Piece {
         return new Piece(_types__WEBPACK_IMPORTED_MODULE_0__.PieceType.empty, this.color, this.position);
     }
     _isPositionChangeValid(to, board) {
-        return (0,_valid_moves__WEBPACK_IMPORTED_MODULE_1__.getValidMoves)(board, this).some((validMove) => validMove.asKey() === to.position.asKey());
+        return (0,_moves_map__WEBPACK_IMPORTED_MODULE_1__.getValidMoves)(board, this).some((validMove) => validMove.asKey() === to.position.asKey());
     }
 }
 
@@ -559,47 +600,6 @@ var Color;
     Color["white"] = "white";
     Color["black"] = "black";
 })(Color || (Color = {}));
-
-
-
-/***/ }),
-
-/***/ "./src/valid_moves.ts":
-/*!****************************!*\
-  !*** ./src/valid_moves.ts ***!
-  \****************************/
-/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
-
-__webpack_require__.r(__webpack_exports__);
-/* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "getValidMoves": () => (/* binding */ getValidMoves)
-/* harmony export */ });
-/* harmony import */ var _moves_bishop__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./moves/bishop */ "./src/moves/bishop.ts");
-/* harmony import */ var _moves_king__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./moves/king */ "./src/moves/king.ts");
-/* harmony import */ var _moves_knight__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./moves/knight */ "./src/moves/knight.ts");
-/* harmony import */ var _moves_pawn__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./moves/pawn */ "./src/moves/pawn.ts");
-/* harmony import */ var _moves_queen__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./moves/queen */ "./src/moves/queen.ts");
-/* harmony import */ var _moves_rook__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./moves/rook */ "./src/moves/rook.ts");
-/* harmony import */ var _types__WEBPACK_IMPORTED_MODULE_6__ = __webpack_require__(/*! ./types */ "./src/types.ts");
-
-
-
-
-
-
-
-const _VALID_MOVES_BY_PIECE = new Map([
-    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.pawn, _moves_pawn__WEBPACK_IMPORTED_MODULE_3__.getValidPawnMoves],
-    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.rook, _moves_rook__WEBPACK_IMPORTED_MODULE_5__.getValidRookMoves],
-    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.knight, _moves_knight__WEBPACK_IMPORTED_MODULE_2__.getValidKnightMoves],
-    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.bishop, _moves_bishop__WEBPACK_IMPORTED_MODULE_0__.getValidBishopMoves],
-    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.queen, _moves_queen__WEBPACK_IMPORTED_MODULE_4__.getValidQueenMoves],
-    [_types__WEBPACK_IMPORTED_MODULE_6__.PieceType.king, _moves_king__WEBPACK_IMPORTED_MODULE_1__.getValidKingMoves],
-]);
-function getValidMoves(board, piece) {
-    const validMovesGetter = _VALID_MOVES_BY_PIECE.get(piece.type);
-    return validMovesGetter ? validMovesGetter(board, piece) : [];
-}
 
 
 
