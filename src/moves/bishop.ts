@@ -1,9 +1,9 @@
 import { ChessBoard } from "../board";
 import { Piece, Position } from "../piece";
-import { getDiagonalMoves } from "./common_moves";
+import { MovesGenerator } from "./common_moves";
 
 function getValidBishopMoves(board: ChessBoard, piece: Piece): Position[] {
-  return getDiagonalMoves(board, piece);
+  return new MovesGenerator(board, piece).getDiagonalMoves();
 }
 
 export { getValidBishopMoves };

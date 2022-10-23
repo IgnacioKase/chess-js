@@ -97,14 +97,11 @@ class HTMLChessBoard {
     _insertBoardCell(row) {
         const cell = row.insertCell();
         const position = new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(cell.cellIndex - 1, row.rowIndex - 1);
+        const piece = this._createEmptyPiece(position);
         cell.setAttribute("id", `${position.x}${position.y}`);
         this._cellsByPositionKey.set(position.asKey(), cell);
-        this._setEmptyPieceOnCell(cell, position);
-        cell.addEventListener("click", this._onPieceClick.bind(this));
-    }
-    _setEmptyPieceOnCell(cell, position) {
-        const piece = this._createEmptyPiece(position);
         this._setPieceOnCell(cell, piece);
+        cell.addEventListener("click", this._onPieceClick.bind(this));
     }
     _createEmptyPiece(position) {
         return new _piece__WEBPACK_IMPORTED_MODULE_0__.Piece(_types__WEBPACK_IMPORTED_MODULE_1__.PieceType.empty, _types__WEBPACK_IMPORTED_MODULE_1__.Color.white, position);
@@ -238,7 +235,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_moves__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./common_moves */ "./src/moves/common_moves.ts");
 
 function getValidBishopMoves(board, piece) {
-    return (0,_common_moves__WEBPACK_IMPORTED_MODULE_0__.getDiagonalMoves)(board, piece);
+    return new _common_moves__WEBPACK_IMPORTED_MODULE_0__.MovesGenerator(board, piece).getDiagonalMoves();
 }
 
 
@@ -253,53 +250,65 @@ function getValidBishopMoves(board, piece) {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "getDiagonalMoves": () => (/* binding */ getDiagonalMoves),
-/* harmony export */   "getHorizontalMoves": () => (/* binding */ getHorizontalMoves),
-/* harmony export */   "getVerticalMoves": () => (/* binding */ getVerticalMoves)
+/* harmony export */   "MovesGenerator": () => (/* binding */ MovesGenerator)
 /* harmony export */ });
-function getHorizontalMoves(board, piece) {
-    const validMoves = [];
-    const directions = [-1, 1];
-    for (const direction of directions) {
-        let position = piece.position.translateByNColumn(direction);
-        while (board.isEmpty(position) && position.isValid()) {
-            validMoves.push(position);
-            position = position.translateByNColumn(direction);
-        }
-        if (board.isEnemyPiece(position, piece.color))
-            validMoves.push(position);
+class MovesGenerator {
+    constructor(board, piece) {
+        this._board = board;
+        this._piece = piece;
     }
-    return validMoves;
-}
-function getVerticalMoves(board, piece) {
-    const validMoves = [];
-    const directions = [-1, 1];
-    for (const direction of directions) {
-        let position = piece.position.translateByNRow(direction);
-        while (board.isEmpty(position) && position.isValid()) {
-            validMoves.push(position);
-            position = position.translateByNRow(direction);
-        }
-        if (board.isEnemyPiece(position, piece.color))
-            validMoves.push(position);
+    getHorizontalMoves() {
+        const directions = [-1, 1];
+        const translations = this._getTranslationFromDirections(directions, [0]);
+        return this._getMovesInTranslations(translations);
     }
-    return validMoves;
-}
-function getDiagonalMoves(board, piece) {
-    const validMoves = [];
-    const directions = [-1, 1];
-    for (const xDirection of directions) {
-        for (const yDirection of directions) {
-            let position = piece.position.translateN(xDirection, yDirection);
-            while (board.isEmpty(position) && position.isValid()) {
-                validMoves.push(position);
-                position = position.translateN(xDirection, yDirection);
-            }
-            if (board.isEnemyPiece(position, piece.color))
-                validMoves.push(position);
-        }
+    getVerticalMoves() {
+        const directions = [-1, 1];
+        const translations = this._getTranslationFromDirections([0], directions);
+        return this._getMovesInTranslations(translations);
     }
-    return validMoves;
+    getDiagonalMoves() {
+        const directions = [-1, 1];
+        const translations = this._getTranslationFromDirections(directions, directions);
+        return this._getMovesInTranslations(translations);
+    }
+    getValidMovesFromPositions(positions) {
+        const moves = [];
+        for (const position of positions) {
+            if (this._board.isEmpty(position))
+                moves.push(position);
+            if (this._board.isEnemyPiece(position, this._piece.color))
+                moves.push(position);
+        }
+        return moves;
+    }
+    _getTranslationFromDirections(xDirections, yDirections) {
+        let translations = [];
+        for (let xDirection of xDirections)
+            for (let yDirection of yDirections)
+                translations.push({ x: xDirection, y: yDirection });
+        return translations;
+    }
+    _getMovesInTranslations(translations) {
+        return translations
+            .map((translation) => this._getMovesInDirection(translation))
+            .flat();
+    }
+    _getMovesInDirection(translation) {
+        let moves = [];
+        let position = this._piece.position.translate(translation);
+        for (let move of this._moveUntilBlocked(position, translation))
+            moves.push(move);
+        return moves;
+    }
+    *_moveUntilBlocked(position, translation) {
+        while (this._board.isEmpty(position) && position.isValid()) {
+            yield position;
+            position = position.translate(translation);
+        }
+        if (this._board.isEnemyPiece(position, this._piece.color))
+            yield position;
+    }
 }
 
 
@@ -317,11 +326,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "getValidKingMoves": () => (/* binding */ getValidKingMoves)
 /* harmony export */ });
 /* harmony import */ var _piece__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../piece */ "./src/piece.ts");
+/* harmony import */ var _common_moves__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./common_moves */ "./src/moves/common_moves.ts");
+
 
 function getValidKingMoves(board, piece) {
-    const moves = [];
+    const movesGenerator = new _common_moves__WEBPACK_IMPORTED_MODULE_1__.MovesGenerator(board, piece);
+    const positions = _getPossibleKingMoves(piece);
+    return movesGenerator.getValidMovesFromPositions(positions);
+}
+function _getPossibleKingMoves(piece) {
     const { x, y } = piece.position;
-    const positions = [
+    return [
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x - 1, y - 1),
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x - 1, y),
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x - 1, y + 1),
@@ -331,13 +346,6 @@ function getValidKingMoves(board, piece) {
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x + 1, y),
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x + 1, y + 1),
     ].filter((p) => p.isValid());
-    for (const position of positions) {
-        if (board.isEmpty(position))
-            moves.push(position);
-        if (board.isEnemyPiece(position, piece.color))
-            moves.push(position);
-    }
-    return moves;
 }
 
 
@@ -355,11 +363,17 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "getValidKnightMoves": () => (/* binding */ getValidKnightMoves)
 /* harmony export */ });
 /* harmony import */ var _piece__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../piece */ "./src/piece.ts");
+/* harmony import */ var _common_moves__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./common_moves */ "./src/moves/common_moves.ts");
+
 
 function getValidKnightMoves(board, piece) {
-    const moves = [];
+    const movesGenerator = new _common_moves__WEBPACK_IMPORTED_MODULE_1__.MovesGenerator(board, piece);
+    const positions = _getPossibleKnightMoves(piece);
+    return movesGenerator.getValidMovesFromPositions(positions);
+}
+function _getPossibleKnightMoves(piece) {
     const { x, y } = piece.position;
-    const positions = [
+    return [
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x - 2, y - 1),
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x - 2, y + 1),
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x - 1, y - 2),
@@ -369,13 +383,6 @@ function getValidKnightMoves(board, piece) {
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x + 2, y - 1),
         new _piece__WEBPACK_IMPORTED_MODULE_0__.Position(x + 2, y + 1),
     ].filter((p) => p.isValid());
-    for (const position of positions) {
-        if (board.isEmpty(position))
-            moves.push(position);
-        if (board.isEnemyPiece(position, piece.color))
-            moves.push(position);
-    }
-    return moves;
 }
 
 
@@ -434,9 +441,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_moves__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./common_moves */ "./src/moves/common_moves.ts");
 
 function getValidQueenMoves(board, piece) {
-    const horizontalMoves = (0,_common_moves__WEBPACK_IMPORTED_MODULE_0__.getHorizontalMoves)(board, piece);
-    const verticalMoves = (0,_common_moves__WEBPACK_IMPORTED_MODULE_0__.getVerticalMoves)(board, piece);
-    const diagonalMoves = (0,_common_moves__WEBPACK_IMPORTED_MODULE_0__.getDiagonalMoves)(board, piece);
+    const movesGenerator = new _common_moves__WEBPACK_IMPORTED_MODULE_0__.MovesGenerator(board, piece);
+    const horizontalMoves = movesGenerator.getHorizontalMoves();
+    const verticalMoves = movesGenerator.getVerticalMoves();
+    const diagonalMoves = movesGenerator.getDiagonalMoves();
     return horizontalMoves.concat(verticalMoves, diagonalMoves);
 }
 
@@ -457,8 +465,9 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var _common_moves__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./common_moves */ "./src/moves/common_moves.ts");
 
 function getValidRookMoves(board, piece) {
-    const horizontalMoves = (0,_common_moves__WEBPACK_IMPORTED_MODULE_0__.getHorizontalMoves)(board, piece);
-    const verticalMoves = (0,_common_moves__WEBPACK_IMPORTED_MODULE_0__.getVerticalMoves)(board, piece);
+    const movesGenerator = new _common_moves__WEBPACK_IMPORTED_MODULE_0__.MovesGenerator(board, piece);
+    const horizontalMoves = movesGenerator.getHorizontalMoves();
+    const verticalMoves = movesGenerator.getVerticalMoves();
     return horizontalMoves.concat(verticalMoves);
 }
 
@@ -530,8 +539,8 @@ class Position {
     asKey() {
         return `${this.x},${this.y}`;
     }
-    translateN(columns, rows) {
-        return new Position(this.x + columns, this.y + rows);
+    translate(translation) {
+        return new Position(this.x + translation.x, this.y + translation.y);
     }
     translateByNRow(rows) {
         return new Position(this.x, this.y + rows);

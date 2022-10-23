@@ -1,48 +1,81 @@
 import { ChessBoard } from "../board";
-import { Piece, Position } from "../piece";
+import { Piece, Position, Translation } from "../piece";
 
-function getHorizontalMoves(board: ChessBoard, piece: Piece): Position[] {
-  const validMoves: Position[] = [];
-  const directions = [-1, 1];
-  for (const direction of directions) {
-    let position = piece.position.translateByNColumn(direction);
-    while (board.isEmpty(position) && position.isValid()) {
-      validMoves.push(position);
-      position = position.translateByNColumn(direction);
-    }
-    if (board.isEnemyPiece(position, piece.color)) validMoves.push(position);
+class MovesGenerator {
+  private _board: ChessBoard;
+  private _piece: Piece;
+
+  constructor(board: ChessBoard, piece: Piece) {
+    this._board = board;
+    this._piece = piece;
   }
-  return validMoves;
+
+  getHorizontalMoves(): Position[] {
+    const directions = [-1, 1];
+    const translations = this._getTranslationFromDirections(directions, [0]);
+    return this._getMovesInTranslations(translations);
+  }
+
+  getVerticalMoves(): Position[] {
+    const directions = [-1, 1];
+    const translations = this._getTranslationFromDirections([0], directions);
+    return this._getMovesInTranslations(translations);
+  }
+
+  getDiagonalMoves(): Position[] {
+    const directions = [-1, 1];
+    const translations = this._getTranslationFromDirections(
+      directions,
+      directions
+    );
+    return this._getMovesInTranslations(translations);
+  }
+
+  getValidMovesFromPositions(positions: Position[]): Position[] {
+    const moves: Position[] = [];
+    for (const position of positions) {
+      if (this._board.isEmpty(position)) moves.push(position);
+      if (this._board.isEnemyPiece(position, this._piece.color))
+        moves.push(position);
+    }
+    return moves;
+  }
+
+  _getTranslationFromDirections(
+    xDirections: number[],
+    yDirections: number[]
+  ): Translation[] {
+    let translations: Translation[] = [];
+    for (let xDirection of xDirections)
+      for (let yDirection of yDirections)
+        translations.push({ x: xDirection, y: yDirection });
+    return translations;
+  }
+
+  _getMovesInTranslations(translations: Translation[]): Position[] {
+    return translations
+      .map((translation) => this._getMovesInDirection(translation))
+      .flat();
+  }
+
+  _getMovesInDirection(translation: Translation): Position[] {
+    let moves: Position[] = [];
+    let position = this._piece.position.translate(translation);
+    for (let move of this._moveUntilBlocked(position, translation))
+      moves.push(move);
+    return moves;
+  }
+
+  *_moveUntilBlocked(
+    position: Position,
+    translation: Translation
+  ): Generator<Position> {
+    while (this._board.isEmpty(position) && position.isValid()) {
+      yield position;
+      position = position.translate(translation);
+    }
+    if (this._board.isEnemyPiece(position, this._piece.color)) yield position;
+  }
 }
 
-function getVerticalMoves(board: ChessBoard, piece: Piece): Position[] {
-  const validMoves: Position[] = [];
-  const directions = [-1, 1];
-  for (const direction of directions) {
-    let position = piece.position.translateByNRow(direction);
-    while (board.isEmpty(position) && position.isValid()) {
-      validMoves.push(position);
-      position = position.translateByNRow(direction);
-    }
-    if (board.isEnemyPiece(position, piece.color)) validMoves.push(position);
-  }
-  return validMoves;
-}
-
-function getDiagonalMoves(board: ChessBoard, piece: Piece): Position[] {
-  const validMoves: Position[] = [];
-  const directions = [-1, 1];
-  for (const xDirection of directions) {
-    for (const yDirection of directions) {
-      let position = piece.position.translateN(xDirection, yDirection);
-      while (board.isEmpty(position) && position.isValid()) {
-        validMoves.push(position);
-        position = position.translateN(xDirection, yDirection);
-      }
-      if (board.isEnemyPiece(position, piece.color)) validMoves.push(position);
-    }
-  }
-  return validMoves;
-}
-
-export { getHorizontalMoves, getVerticalMoves, getDiagonalMoves };
+export { MovesGenerator };

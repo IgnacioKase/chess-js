@@ -4,6 +4,11 @@ import { getValidMoves } from "./moves_map";
 
 type PositionKey = string;
 
+interface Translation {
+  x: number;
+  y: number;
+}
+
 class Position {
   x: number;
   y: number;
@@ -17,8 +22,8 @@ class Position {
     return `${this.x},${this.y}`;
   }
 
-  translateN(columns: number, rows: number): Position {
-    return new Position(this.x + columns, this.y + rows);
+  translate(translation: Translation): Position {
+    return new Position(this.x + translation.x, this.y + translation.y);
   }
 
   translateByNRow(rows: number): Position {
@@ -75,4 +80,4 @@ interface Move {
   to: Piece;
 }
 
-export { Position, PositionKey, Piece, Move };
+export { Position, PositionKey, Piece, Move, Translation};

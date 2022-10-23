@@ -1,10 +1,11 @@
 import { ChessBoard } from "../board";
 import { Piece, Position } from "../piece";
-import { getHorizontalMoves, getVerticalMoves } from "./common_moves";
+import { MovesGenerator } from "./common_moves";
 
 function getValidRookMoves(board: ChessBoard, piece: Piece): Position[] {
-  const horizontalMoves = getHorizontalMoves(board, piece);
-  const verticalMoves = getVerticalMoves(board, piece);
+  const movesGenerator = new MovesGenerator(board, piece);
+  const horizontalMoves = movesGenerator.getHorizontalMoves();
+  const verticalMoves = movesGenerator.getVerticalMoves();
 
   return horizontalMoves.concat(verticalMoves);
 }

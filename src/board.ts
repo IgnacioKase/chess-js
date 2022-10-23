@@ -104,18 +104,11 @@ class HTMLChessBoard implements ChessBoard {
   private _insertBoardCell(row: HTMLTableRowElement): void {
     const cell = row.insertCell();
     const position = new Position(cell.cellIndex - 1, row.rowIndex - 1);
+    const piece = this._createEmptyPiece(position)
     cell.setAttribute("id", `${position.x}${position.y}`);
     this._cellsByPositionKey.set(position.asKey(), cell);
-    this._setEmptyPieceOnCell(cell, position);
-    cell.addEventListener("click", this._onPieceClick.bind(this));
-  }
-
-  private _setEmptyPieceOnCell(
-    cell: HTMLTableCellElement,
-    position: Position
-  ): void {
-    const piece = this._createEmptyPiece(position);
     this._setPieceOnCell(cell, piece);
+    cell.addEventListener("click", this._onPieceClick.bind(this));
   }
 
   private _createEmptyPiece(position: Position): Piece {
