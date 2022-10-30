@@ -1,4 +1,5 @@
 const path = require('path');
+const ESLintPlugin = require('eslint-webpack-plugin');
 
 module.exports = {
   mode: 'development',
@@ -20,4 +21,10 @@ module.exports = {
     filename: 'bundle.js',
     path: path.resolve(__dirname, 'dist'),
   },
+  plugins: [
+    new ESLintPlugin({
+       extensions: ['.tsx', '.ts', '.js'],
+       exclude: 'node_modules'
+    })
+ ],
 };
